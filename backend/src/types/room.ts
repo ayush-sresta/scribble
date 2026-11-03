@@ -13,3 +13,8 @@ export interface CreateRoomResponse {
   room: RoomResponse;
   participant: Participant;
 }
+
+export interface JoinRoomResponse {
+  room: RoomResponse;
+  participant: Participant;
+}

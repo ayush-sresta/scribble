@@ -2,7 +2,7 @@ import { randomInt, randomUUID } from "node:crypto";
 import type { Participant } from "../types/participant.js";
 import { Room } from "../models/room.js";
 import { GAME_CONFIG } from "../config/game.js";
-import type { CreateRoomResponse } from "../types/room.js";
+import type { CreateRoomResponse, JoinRoomResponse } from "../types/room.js";
 
 const ROOM_CODE_CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
@@ -26,12 +26,15 @@ async function generateUniqueRoomCode(length = 6): Promise<string> {
   }
 }
 
-function createParticipant(username: string): Participant {
+function createParticipant(
+  username: string,
+  role: Participant["role"] = "host",
+): Participant {
   const playerId = randomUUID();
   return {
     playerId,
     username,
-    role: "host" as const,
+    role,
   };
 }
 
@@ -58,6 +61,42 @@ export async function createRoom(
       settings: {
         maxPlayers: room.settings.maxPlayers,
       },
+    },
+    participant,
+  };
+}
+
+export async function joinRoom(
+  code: string,
+  username: string,
+): Promise<JoinRoomResponse> {
+  const normalizedCode = code.trim().toUpperCase();
+  const room = await Room.findOne({ code: normalizedCode });
+
+  if (!room) {
+    throw new Error("Room not found");
+  }
+
+  if (room.status !== "waiting") {
+    throw new Error("Room is not in a joinable state");
+  }
+
+  if (room.participants.length >= room.settings.maxPlayers) {
+    throw new Error("Room is full");
+  }
+
+  const participant = createParticipant(username.trim(), "player");
+  room.participants.push(participant);
+  await room.save();
+
+  return {
+    room: {
+      code: room.code,
+      status: room.status,
+      settings: {
+        maxPlayers: room.settings.maxPlayers,
+      },
+      participants: room.participants,
     },
     participant,
   };
