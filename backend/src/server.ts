@@ -4,6 +4,7 @@ import express from "express";
 import cors from "cors";
 import connectDB from "./config/db.js";
 import roomRouter from "./routes/room.route.js";
+import { errorMiddleware } from "./middleware/error.middleware.js";
 
 const app = express();
 
@@ -17,7 +18,9 @@ app.get("/", (req, res) => {
 });
 
 // *********** APIS ************
-app.use("/api/rooms", roomRouter)
+app.use("/api/rooms", roomRouter);
+
+app.use(errorMiddleware);
 
 const PORT = process.env.PORT || 5000;
 

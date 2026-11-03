@@ -3,6 +3,7 @@ import type { Participant } from "../types/participant.js";
 import { Room } from "../models/room.js";
 import { GAME_CONFIG } from "../config/game.js";
 import type { CreateRoomResponse, JoinRoomResponse } from "../types/room.js";
+import { AppError } from "../utils/app-error.js";
 
 const ROOM_CODE_CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
@@ -74,15 +75,15 @@ export async function joinRoom(
   const room = await Room.findOne({ code: normalizedCode });
 
   if (!room) {
-    throw new Error("Room not found");
+    throw new AppError(404, "Room not found");
   }
 
   if (room.status !== "waiting") {
-    throw new Error("Room is not in a joinable state");
+    throw new AppError(400, "Room is not in a joinable state");
   }
 
   if (room.participants.length >= room.settings.maxPlayers) {
-    throw new Error("Room is full");
+    throw new AppError(400, "Room is full");
   }
 
   const participant = createParticipant(username.trim(), "player");
