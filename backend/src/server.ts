@@ -3,6 +3,7 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import connectDB from "./config/db.js";
+import roomRouter from "./routes/room.route.js";
 
 const app = express();
 
@@ -14,6 +15,9 @@ app.get("/", (req, res) => {
     message: "Scribble API is running!",
   });
 });
+
+// *********** APIS ************
+app.use("/api/rooms", roomRouter)
 
 const PORT = process.env.PORT || 5000;
 

@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import { Participant } from "../types/participant.js";
 
-interface Room {
+export interface Room {
   code: string;
   status: "waiting" | "playing" | "completed";
   participants: Participant[];
