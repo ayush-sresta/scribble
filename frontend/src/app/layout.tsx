@@ -1,6 +1,19 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { DynaPuff, Geist, Geist_Mono, Roboto_Slab } from "next/font/google";
 import "./globals.css";
+import { ThemeProvider } from "@/components/theme-provider";
+
+const dynaPuff = DynaPuff({
+  variable: "--font-dyna-puff",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const robotoSlab = Roboto_Slab({
+  variable: "--font-roboto-slab",
+  subsets: ["latin"],
+  display: "swap",
+});
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,9 +34,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
+      className={`${geistSans.variable} ${geistMono.variable} ${dynaPuff.variable} ${robotoSlab.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full py-6 px-20">
+        <ThemeProvider>{children}</ThemeProvider>
+      </body>
     </html>
   );
 }

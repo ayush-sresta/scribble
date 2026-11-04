@@ -1,97 +1,47 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { socket } from "@/lib/socket";
-
-const API_URL = "http://localhost:5000";
+import { ThemeToggle } from "@/components/theme-toggle";
+import Link from "next/link";
 
 export default function Home() {
-  const [code, setCode] = useState("");
-  const [username, setUsername] = useState("");
-  const [message, setMessage] = useState("");
-
-  useEffect(() => {
-    socket.on("room:joined", (data) => {
-      setMessage(`Successfully joined room ${data.code}!`);
-      console.log("Room joined:", data);
-    });
-
-    socket.on("room:updated", (data) => {
-      console.log("Room updated:", data);
-    });
-
-    socket.on("room:error", (data) => {
-      setMessage(data.message);
-    });
-
-    return () => {
-      socket.off("room:joined");
-      socket.off("room:updated");
-      socket.off("room:error");
-    };
-  }, []);
-
-  const handleJoinRoom = async () => {
-    try {
-      setMessage("Joining room...");
-
-      const response = await fetch(`${API_URL}/api/rooms/join`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ code, username }),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        setMessage(result.message);
-        return;
-      }
-
-      const { room, participant } = result.data;
-
-      if (!socket.connected) {
-        socket.connect();
-      }
-
-      socket.emit("room:join", {
-        code: room.code,
-        playerId: participant.playerId,
-      });
-    } catch (error) {
-      console.error(error);
-      setMessage("Something went wrong.");
-    }
-  };
-
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-4">
-      <h1 className="text-3xl font-bold">Scribble</h1>
-
-      <input
-        placeholder="Room code"
-        value={code}
-        onChange={(e) => setCode(e.target.value)}
-        className="border p-2"
-      />
-
-      <input
-        placeholder="Username"
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
-        className="border p-2"
-      />
-
-      <button
-        onClick={handleJoinRoom}
-        className="rounded bg-blue-600 px-4 py-2 text-white"
-      >
-        Join Room
-      </button>
-
-      <p>{message}</p>
+    <main className="min-h-screen bg-background text-foreground">
+      <div className="flex justify-between items-center">
+        <h1 className="font-dyna text-3xl font-bold">Scribble</h1>
+        <div className="flex items-center gap-10">
+          <p>How to play</p>
+          <p>Leaderboard</p>
+        </div>
+        <div className="flex items-center gap-4">
+          <ThemeToggle />
+          <button className="bg-primary text-background px-4 py-2.5 rounded-full font-semibold cursor-pointer">
+            Play now
+          </button>
+        </div>
+      </div>
+      <div className="flex flex-col items-center justify-center gap-4 mt-60">
+        <h2 className="font-roboto-slab text-7xl font-medium">Draw it.</h2>
+        <h2 className="font-roboto-slab text-7xl font-medium">
+          Guess it. Laugh Loud.
+        </h2>
+        <p className="text-gray-600 mt-3 flex items-center flex-col text-lg">
+          <span>
+            A free online draw-and-guess party game. Create a room, send the
+          </span>
+          <span>
+            link to your friends. and in 30 seconds you will be roasting each
+          </span>
+          <span>other's drawing skills.</span>
+        </p>
+        <div className="flex items-center gap-5">
+          <Link href={"/create"}>
+            <button className="bg-primary py-3 px-5 text-background font-semibold rounded-full cursor-pointer">
+              Create room
+            </button>
+          </Link>
+          <button className="border-2 border-primary py-3 px-5 font-semibold rounded-full cursor-pointer">
+            Join room
+          </button>
+        </div>
+      </div>
     </main>
   );
 }
