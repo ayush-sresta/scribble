@@ -102,3 +102,46 @@ export async function joinRoom(
     participant,
   };
 }
+
+export async function leaveRoom(code: string, playerId: string) {
+  const room = await Room.findOne({
+    code: code.trim().toUpperCase(),
+  });
+
+  if (!room) {
+    throw new AppError(404, "Room not found.");
+  }
+
+  const participantIndex = room.participants.findIndex(
+    (player) => player.playerId === playerId,
+  );
+
+  if (participantIndex === -1) {
+    throw new AppError(404, "Participant not found.");
+  }
+
+  const leavingParticipant = room.participants[participantIndex];
+
+  // Remove participant
+  room.participants.splice(participantIndex, 1);
+
+  // Delete room if nobody remains
+  if (room.participants.length === 0) {
+    await room.deleteOne();
+    return null;
+  }
+
+  // Transfer host role if the host leaves
+  if (leavingParticipant.role === "host") {
+    room.participants[0].role = "host";
+  }
+
+  await room.save();
+
+  return {
+    code: room.code,
+    status: room.status,
+    participants: room.participants,
+    settings: room.settings,
+  };
+}

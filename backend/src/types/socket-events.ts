@@ -7,6 +7,7 @@ export const SERVER_EVENTS = {
   ROOM_JOINED: "room:joined",
   ROOM_UPDATED: "room:updated",
   ROOM_ERROR: "room:error",
+  ROOM_LEFT: "room:left",
 } as const;
 
 export interface JoinRoomPayload {
