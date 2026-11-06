@@ -46,6 +46,11 @@ export default function LobbyPage() {
       });
     };
 
+    const handleRoomLeft = () => {
+      socket.disconnect();
+      router.push("/");
+    };
+
     const handleConnect = () => {
       setConnected(true);
       setError("");
@@ -71,6 +76,7 @@ export default function LobbyPage() {
     socket.on("disconnect", handleDisconnect);
     socket.on("room:updated", handleRoomUpdated);
     socket.on("room:error", handleRoomError);
+    socket.on("room:left", handleRoomLeft);
 
     if (socket.connected) {
       handleConnect();
@@ -83,6 +89,7 @@ export default function LobbyPage() {
       socket.off("disconnect", handleDisconnect);
       socket.off("room:updated", handleRoomUpdated);
       socket.off("room:error", handleRoomError);
+      socket.off("room:left", handleRoomLeft);
     };
   }, [roomCode, playerId]);
 
@@ -99,13 +106,18 @@ export default function LobbyPage() {
 
   // Leave lobby
   const handleLeaveRoom = () => {
-    socket.disconnect();
-    router.push("/");
-  };
+    if (!socket.connected) {
+      router.push("/");
+      return;
+    }
 
+    socket.emit("room:leave", {
+      code: roomCode,
+      playerId,
+    });
+  };
   const isHost = players.find((p) => p.playerId === playerId)?.role === "host";
   console.log(isHost);
-  
 
   return (
     <main className="min-h-screen bg-background px-4 py-10 text-foreground">
