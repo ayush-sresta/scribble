@@ -5,7 +5,7 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-background text-foreground">
       <div className="flex justify-between items-center">
-        <h1 className="font-dyna text-3xl font-bold">Scribble</h1>
+        <h1 className="font-dyna text-4xl font-bold">Scribble</h1>
         <div className="flex items-center gap-10">
           <p>How to play</p>
           <p>Leaderboard</p>
@@ -37,9 +37,11 @@ export default function Home() {
               Create room
             </button>
           </Link>
-          <button className="border-2 border-primary py-3 px-5 font-semibold rounded-full cursor-pointer">
-            Join room
-          </button>
+          <Link href={"/join"}>
+            <button className="border-2 border-primary py-3 px-5 font-semibold rounded-full cursor-pointer">
+              Join room
+            </button>
+          </Link>
         </div>
       </div>
     </main>

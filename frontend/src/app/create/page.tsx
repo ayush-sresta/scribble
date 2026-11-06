@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import axios from "axios";
 
 const Page = () => {
   const [username, setUsername] = useState("");
@@ -19,23 +20,24 @@ const Page = () => {
       setLoading(true);
       setError("");
 
-      const response = await fetch("http://localhost:5000/api/rooms", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await axios.post(
+        "http://localhost:5000/api/rooms",
+        { username },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
         },
-        body: JSON.stringify({ username: username.trim() }),
-      });
+      );
 
-      const result = await response.json();
+      // console.log(response);
 
-      if (!response.ok) {
-        throw new Error(result.message || "Unable to create room.");
-      }
+      const { data } = response.data;
+      console.log(data);
 
-      const { room, participant } = result.data;
+      // const { room, participant } = result.data;
 
-      router.push(`/lobby/${room.code}?playerId=${participant.playerId}`);
+      router.push(`/lobby/${data.room.code}?playerId=${data.participant.playerId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
@@ -75,7 +77,7 @@ const Page = () => {
           <button
             onClick={handleCreateRoom}
             disabled={loading}
-            className="w-full rounded-xl bg-primary px-4 py-3 font-bold text-white shadow-md transition hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+            className="w-full rounded-xl bg-primary px-4 py-3 font-bold text-white shadow-md transition hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
           >
             {loading ? "Creating room..." : "Create Room 🚀"}
           </button>
