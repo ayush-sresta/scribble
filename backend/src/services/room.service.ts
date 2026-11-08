@@ -145,3 +145,44 @@ export async function leaveRoom(code: string, playerId: string) {
     settings: room.settings,
   };
 }
+
+export const startGame = async (code: string, playerId: string) => {
+  const room = await Room.findOne({
+    code: code.trim().toUpperCase(),
+  });
+
+  if (!room) {
+    throw new AppError(404, "Room not found.");
+  }
+
+  const participant = room.participants.find(
+    (player) => player.playerId === playerId,
+  );
+
+  if (!participant) {
+    throw new AppError(404, "Participant not found.");
+  }
+
+  if (participant.role !== "host") {
+    throw new AppError(403, "Only the host can start the game.");
+  }
+
+  if (room.status !== "waiting") {
+    throw new AppError(400, "Game has already started.");
+  }
+
+  if (room.participants.length < 2) {
+    throw new AppError(400, "At least 2 players are required to start.");
+  }
+
+  room.status = "playing";
+
+  await room.save();
+
+  return {
+    code: room.code,
+    status: room.status,
+    participants: room.participants,
+    settings: room.settings,
+  };
+};

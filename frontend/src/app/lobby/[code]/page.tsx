@@ -77,6 +77,8 @@ export default function LobbyPage() {
     socket.on("room:updated", handleRoomUpdated);
     socket.on("room:error", handleRoomError);
     socket.on("room:left", handleRoomLeft);
+    socket.on("game:started", handleGameStarted);
+    socket.on("game:error", handleGameError);
 
     if (socket.connected) {
       handleConnect();
@@ -90,6 +92,8 @@ export default function LobbyPage() {
       socket.off("room:updated", handleRoomUpdated);
       socket.off("room:error", handleRoomError);
       socket.off("room:left", handleRoomLeft);
+      socket.off("game:started", handleGameStarted);
+      socket.off("game:error", handleGameError);
     };
   }, [roomCode, playerId]);
 
@@ -118,6 +122,28 @@ export default function LobbyPage() {
   };
   const isHost = players.find((p) => p.playerId === playerId)?.role === "host";
   console.log(isHost);
+
+  const handleGameStarted = ({ code }: { code: string }) => {
+    router.push(`/game/${code}`);
+  };
+
+  const handleGameError = ({ message }: { message: string }) => {
+    setError(message);
+  };
+
+  const handleStartGame = () => {
+    if (!socket.connected) {
+      setError("You are disconnected from the room.");
+      return;
+    }
+
+    setError("");
+
+    socket.emit("game:start", {
+      code: roomCode,
+      playerId,
+    });
+  };
 
   return (
     <main className="min-h-screen bg-background px-4 py-10 text-foreground">
@@ -235,8 +261,16 @@ export default function LobbyPage() {
 
           {/* Start Game */}
           <button
-            disabled={isHost ? true : false}
-            className="mt-6 w-full cursor-not-allowed rounded-2xl bg-primary py-4 font-dyna text-lg font-bold text-white opacity-60"
+            onClick={handleStartGame}
+            disabled={
+              !socket.connected ||
+              players.length < 2 ||
+              !players.some(
+                (player) =>
+                  player.playerId === playerId && player.role === "host",
+              )
+            }
+            className="mt-6 w-full rounded-2xl bg-primary py-4 font-dyna text-lg font-bold text-white opacity-60"
           >
             Start Game 🚀
           </button>
