@@ -4,6 +4,7 @@ import { Room } from "../models/room.js";
 import { GAME_CONFIG } from "../config/game.js";
 import type { CreateRoomResponse, JoinRoomResponse } from "../types/room.js";
 import { AppError } from "../utils/app-error.js";
+import { WORD_BANK } from "../config/words.js";
 
 const ROOM_CODE_CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
@@ -51,6 +52,14 @@ export async function createRoom(
     settings: {
       maxPlayers: GAME_CONFIG.MAX_PLAYERS,
     },
+    game: {
+      currentRound: 0,
+      currentTurn: 0,
+      currentArtist: null,
+      currentWord: null,
+      roundEndsAt: null,
+      scores: new Map([[participant.playerId, 0]]),
+    },
   });
 
   await room.save();
@@ -88,6 +97,7 @@ export async function joinRoom(
 
   const participant = createParticipant(username.trim(), "player");
   room.participants.push(participant);
+  room.game.scores.set(participant.playerId, 0);
   await room.save();
 
   return {
@@ -124,6 +134,8 @@ export async function leaveRoom(code: string, playerId: string) {
 
   // Remove participant
   room.participants.splice(participantIndex, 1);
+
+  room.game.scores.delete(playerId);
 
   // Delete room if nobody remains
   if (room.participants.length === 0) {
@@ -171,11 +183,32 @@ export const startGame = async (code: string, playerId: string) => {
     throw new AppError(400, "Game has already started.");
   }
 
-  if (room.participants.length < 2) {
+  if (room.participants.length < GAME_CONFIG.MIN_PLAYERS) {
     throw new AppError(400, "At least 2 players are required to start.");
   }
 
+  // Select a random artist.
+  const artistIndex = randomInt(0, room.participants.length);
+  const artist = room.participants[artistIndex];
+
+  // Select a random word.
+  const wordIndex = randomInt(0, WORD_BANK.length);
+  const word = WORD_BANK[wordIndex];
+
+  // Initialize the first round.
   room.status = "playing";
+  room.game.currentRound = 1;
+  room.game.currentTurn = artistIndex;
+  room.game.currentArtist = artist.playerId;
+  room.game.currentWord = word;
+  room.game.roundEndsAt = new Date(Date.now() + GAME_CONFIG.DRAW_TIME * 1000);
+
+  // Ensure every participant has a score.
+  for (const player of room.participants) {
+    if (!room.game.scores.has(player.playerId)) {
+      room.game.scores.set(player.playerId, 0);
+    }
+  }
 
   await room.save();
 

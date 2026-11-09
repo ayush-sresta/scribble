@@ -124,7 +124,7 @@ export default function LobbyPage() {
   console.log(isHost);
 
   const handleGameStarted = ({ code }: { code: string }) => {
-    router.push(`/game/${code}`);
+    router.push(`/game/${code}?playerId=${playerId}`);
   };
 
   const handleGameError = ({ message }: { message: string }) => {

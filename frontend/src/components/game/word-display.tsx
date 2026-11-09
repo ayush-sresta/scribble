@@ -1,13 +1,25 @@
-const WordDisplay = () => {
+"use client";
+
+interface WordDisplayProps {
+  word: string | null;
+  hint: string | null;
+  isArtist: boolean;
+}
+
+export default function WordDisplay({
+  word,
+  hint,
+  isArtist,
+}: WordDisplayProps) {
   return (
-    <section className="rounded-2xl border border-border bg-card p-5 text-center">
-      <p className="text-sm text-foreground/60">Guess the word!</p>
+    <div className="flex flex-col items-center gap-2">
+      <p className="text-sm text-muted-foreground">
+        {isArtist ? "Your word is..." : "Guess the word!"}
+      </p>
 
-      <h2 className="mt-2 font-dyna text-3xl font-bold tracking-[0.4em]">
-        _ _ _ _ _
+      <h2 className="text-2xl font-bold tracking-widest">
+        {isArtist ? (word ?? "Waiting...") : (hint ?? "Waiting...")}
       </h2>
-    </section>
+    </div>
   );
-};
-
-export default WordDisplay;
+}

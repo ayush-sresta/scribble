@@ -6,6 +6,7 @@ export const CLIENT_EVENTS = {
   DRAWING_MOVE: "drawing:move",
   DRAWING_END: "drawing:end",
   CLEAR_CANVAS: "drawing:clear",
+  GAME_SYNC: "game:sync",
 } as const;
 
 export const SERVER_EVENTS = {
@@ -19,6 +20,7 @@ export const SERVER_EVENTS = {
   DRAWING_MOVE: "drawing:move",
   DRAWING_END: "drawing:end",
   CLEAR_CANVAS: "drawing:clear",
+  WORD_SELECTED: "game:word-selected",
 } as const;
 
 export interface JoinRoomPayload {
@@ -46,4 +48,9 @@ export interface DrawingPointPayload {
 
 export interface DrawingEndPayload {
   code: string;
+}
+
+export interface GameSyncPayload {
+  code: string;
+  playerId: string;
 }

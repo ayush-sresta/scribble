@@ -3,6 +3,7 @@ import {
   CLIENT_EVENTS,
   DrawingEndPayload,
   DrawingPointPayload,
+  GameSyncPayload,
   JoinRoomPayload,
   LeaveRoomPayload,
   SERVER_EVENTS,
@@ -10,6 +11,7 @@ import {
 } from "../types/socket-events.js";
 import { Room } from "../models/room.js";
 import { leaveRoom, startGame } from "../services/room.service.js";
+import { getWordHint } from "../utils/word.utils.js";
 
 export const registerRoomHandlers = (io: Server, socket: Socket): void => {
   socket.on(CLIENT_EVENTS.JOIN_ROOM, async (payload: JoinRoomPayload) => {
@@ -44,6 +46,9 @@ export const registerRoomHandlers = (io: Server, socket: Socket): void => {
       }
 
       await socket.join(room.code);
+
+      socket.data.playerId = playerId;
+      socket.data.roomCode = room.code;
 
       socket.emit(SERVER_EVENTS.ROOM_JOINED, {
         code: room.code,
@@ -136,18 +141,135 @@ export const registerRoomHandlers = (io: Server, socket: Socket): void => {
         return;
       }
 
-      const room = await startGame(code, payload.playerId);
+      // Verify that this socket belongs to the claimed participant.
+      if (socket.data.playerId !== payload.playerId) {
+        socket.emit(SERVER_EVENTS.GAME_ERROR, {
+          message: "Player identity mismatch.",
+        });
+        return;
+      }
 
+      await startGame(code, payload.playerId);
+
+      // Fetch the initialized game state.
+      const room = await Room.findOne({ code });
+
+      if (!room || !room.game.currentArtist || !room.game.currentWord) {
+        throw new Error("Game initialization failed.");
+      }
+
+      const { currentArtist, currentWord } = room.game;
+
+      // Public information: safe for everyone.
       io.to(code).emit(SERVER_EVENTS.GAME_STARTED, {
         code: room.code,
         status: room.status,
+        currentRound: room.game.currentRound,
+        currentArtist,
+        roundEndsAt: room.game.roundEndsAt,
       });
+
+      // Find every active socket connected to this room.
+      const roomSockets = await io.in(code).fetchSockets();
+
+      // Deliver private word information.
+      for (const playerSocket of roomSockets) {
+        const isArtist = playerSocket.data.playerId === currentArtist;
+
+        playerSocket.emit(SERVER_EVENTS.WORD_SELECTED, {
+          ...(isArtist
+            ? { word: currentWord }
+            : { hint: getWordHint(currentWord) }),
+        });
+      }
     } catch (error) {
       console.error("Socket start game error:", error);
 
       socket.emit(SERVER_EVENTS.GAME_ERROR, {
         message:
           error instanceof Error ? error.message : "Unable to start game.",
+      });
+    }
+  });
+
+  socket.on(CLIENT_EVENTS.GAME_SYNC, async (payload: GameSyncPayload) => {
+    try {
+      if (
+        !payload ||
+        typeof payload.code !== "string" ||
+        typeof payload.playerId !== "string" ||
+        !payload.code.trim() ||
+        !payload.playerId.trim()
+      ) {
+        socket.emit(SERVER_EVENTS.GAME_ERROR, {
+          message: "Invalid game sync request.",
+        });
+        return;
+      }
+
+      const code = payload.code.trim().toUpperCase();
+
+      const room = await Room.findOne({ code });
+
+      if (!room) {
+        socket.emit(SERVER_EVENTS.GAME_ERROR, {
+          message: "Room not found.",
+        });
+        return;
+      }
+
+      const participant = room.participants.find(
+        (player) => player.playerId === payload.playerId,
+      );
+
+      if (!participant) {
+        socket.emit(SERVER_EVENTS.GAME_ERROR, {
+          message: "Participant not found.",
+        });
+        return;
+      }
+
+      if (
+        room.status !== "playing" ||
+        !room.game.currentArtist ||
+        !room.game.currentWord
+      ) {
+        socket.emit(SERVER_EVENTS.GAME_ERROR, {
+          message: "There is no active game to synchronize.",
+        });
+        return;
+      }
+
+      // Restore this socket's room membership after refresh/reconnection.
+      await socket.join(code);
+
+      socket.data.playerId = participant.playerId;
+      socket.data.roomCode = code;
+
+      // Send public game information only to this player.
+      socket.emit(SERVER_EVENTS.GAME_STARTED, {
+        code: room.code,
+        status: room.status,
+        currentRound: room.game.currentRound,
+        currentArtist: room.game.currentArtist,
+        roundEndsAt: room.game.roundEndsAt,
+      });
+
+      // Send private information only to this player.
+      if (participant.playerId === room.game.currentArtist) {
+        socket.emit(SERVER_EVENTS.WORD_SELECTED, {
+          word: room.game.currentWord,
+        });
+      } else {
+        socket.emit(SERVER_EVENTS.WORD_SELECTED, {
+          hint: getWordHint(room.game.currentWord),
+        });
+      }
+    } catch (error) {
+      console.error("Game sync error:", error);
+
+      socket.emit(SERVER_EVENTS.GAME_ERROR, {
+        message: "Unable to synchronize game.",
       });
     }
   });
