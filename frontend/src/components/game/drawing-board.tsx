@@ -213,6 +213,12 @@ const DrawingBoard = ({ code }: DrawingBoardProps) => {
       context.closePath();
     };
 
+    const handleRemoteClear = (payload: { code: string }) => {
+      if (payload.code !== code) return;
+
+      context.clearRect(0, 0, canvas.width, canvas.height);
+    };
+
     canvas.addEventListener("pointerdown", startDrawing);
     canvas.addEventListener("pointermove", draw);
     canvas.addEventListener("pointerup", stopDrawing);
@@ -222,6 +228,7 @@ const DrawingBoard = ({ code }: DrawingBoardProps) => {
     socket.on("drawing:start", handleRemoteStart);
     socket.on("drawing:move", handleRemoteMove);
     socket.on("drawing:end", handleRemoteEnd);
+    socket.on("drawing:clear", handleRemoteClear);
 
     window.addEventListener("resize", resizeCanvas);
 
@@ -235,6 +242,7 @@ const DrawingBoard = ({ code }: DrawingBoardProps) => {
       socket.off("drawing:start", handleRemoteStart);
       socket.off("drawing:move", handleRemoteMove);
       socket.off("drawing:end", handleRemoteEnd);
+      socket.off("drawing:clear", handleRemoteClear);
 
       window.removeEventListener("resize", resizeCanvas);
     };
@@ -247,6 +255,8 @@ const DrawingBoard = ({ code }: DrawingBoardProps) => {
     if (!canvas || !context) return;
 
     context.clearRect(0, 0, canvas.width, canvas.height);
+
+    socket.emit("drawing:clear", { code });
   };
 
   return (

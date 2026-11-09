@@ -5,6 +5,7 @@ export const CLIENT_EVENTS = {
   DRAWING_START: "drawing:start",
   DRAWING_MOVE: "drawing:move",
   DRAWING_END: "drawing:end",
+  CLEAR_CANVAS: "drawing:clear",
 } as const;
 
 export const SERVER_EVENTS = {
@@ -17,6 +18,7 @@ export const SERVER_EVENTS = {
   DRAWING_START: "drawing:start",
   DRAWING_MOVE: "drawing:move",
   DRAWING_END: "drawing:end",
+  CLEAR_CANVAS: "drawing:clear",
 } as const;
 
 export interface JoinRoomPayload {

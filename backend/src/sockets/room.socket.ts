@@ -223,4 +223,16 @@ export const registerRoomHandlers = (io: Server, socket: Socket): void => {
 
     socket.to(code).emit(SERVER_EVENTS.DRAWING_END, { code });
   });
+
+  socket.on("drawing:clear", (payload: { code: string }) => {
+    if (!payload || typeof payload.code !== "string" || !payload.code.trim()) {
+      return;
+    }
+
+    const code = payload.code.trim().toUpperCase();
+
+    if (!socket.rooms.has(code)) return;
+
+    socket.to(code).emit("drawing:clear", { code });
+  });
 };
